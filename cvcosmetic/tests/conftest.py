@@ -9,11 +9,10 @@ import pytest
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-DATASET_PRIMARY = Path(r"C:\Users\VitoScaletto\OneDrive\Рабочий стол\CVCosmetic\product_dataset")
-DATASET_BACKUP = Path(
-    r"C:\Users\VitoScaletto\OneDrive\Рабочий стол\CVCosmetic"
-    r"\product_dataset_backup-20260421T153504Z-3-001\product_dataset_backup"
-)
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
+DATASET_PRIMARY = _PROJECT_ROOT / "product_dataset"
+_backup_candidates = sorted(_PROJECT_ROOT.glob("product_dataset_backup-*/product_dataset_backup"))
+DATASET_BACKUP = _backup_candidates[0] if _backup_candidates else _PROJECT_ROOT / "product_dataset_backup"
 
 
 def load_metadata(folder: Path) -> dict:

@@ -8,8 +8,10 @@ import os
 from pathlib import Path
 
 API_URL = "http://localhost:8000/api/recognition/label"
-DATASET = Path(r"C:\Users\VitoScaletto\OneDrive\Рабочий стол\CVCosmetic\product_dataset")
-BACKUP  = Path(r"C:\Users\VitoScaletto\OneDrive\Рабочий стол\CVCosmetic\product_dataset_backup-20260421T153504Z-3-001\product_dataset_backup")
+_PROJECT_ROOT = Path(__file__).parent.parent
+DATASET = _PROJECT_ROOT / "product_dataset"
+_backup_candidates = sorted(_PROJECT_ROOT.glob("product_dataset_backup-*/product_dataset_backup"))
+BACKUP  = _backup_candidates[0] if _backup_candidates else _PROJECT_ROOT / "product_dataset_backup"
 
 
 def multipart_request(url: str, image_path: Path, title: str) -> dict:

@@ -5,7 +5,9 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 
 API_URL = "http://localhost:8000/api/recognition/label"
-BACKUP  = Path(r"C:\Users\VitoScaletto\OneDrive\Рабочий стол\CVCosmetic\product_dataset_backup-20260421T153504Z-3-001\product_dataset_backup")
+_PROJECT_ROOT = Path(__file__).parent.parent
+_backup_candidates = sorted(_PROJECT_ROOT.glob("product_dataset_backup-*/product_dataset_backup"))
+BACKUP  = _backup_candidates[0] if _backup_candidates else _PROJECT_ROOT / "product_dataset_backup"
 
 KNOWN_INGREDIENTS_KEYWORDS = [
     "aqua", "glycerin", "water", "alcohol", "acid", "extract",

@@ -1,0 +1,22 @@
+services:
+  label-recognition:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cvcosmetic-ocr:latest
+    container_name: cvcosmetic-ocr
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Монтируем датасеты read-only для отладки/батч-обработки
+      - ../product_dataset:/data/product_dataset:ro
+      - ../product_dataset_backup-20260421T153504Z-3-001/product_dataset_backup:/data/product_dataset_backup:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

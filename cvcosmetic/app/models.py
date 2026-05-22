@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
@@ -10,10 +10,19 @@ class ProductCandidate(BaseModel):
     barcode: Optional[str] = None
 
 
+class CatalogMatchInfo(BaseModel):
+    title: str
+    score: float
+    method: str
+    matched_tokens: int
+    query_tokens: int
+
+
 class RecognitionResponse(BaseModel):
     productCandidate: ProductCandidate
     ingredientsRaw: Optional[str] = None
-    ingredientsParsed: List[str] = []
+    ingredientsParsed: List[str] = Field(default_factory=list)
     ocrText: Optional[str] = None
-    errors: List[str] = []
-    warnings: List[str] = []
+    catalogMatch: Optional[CatalogMatchInfo] = None
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)

@@ -10,9 +10,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      # Монтируем датасеты read-only для отладки/батч-обработки
-      - ../product_dataset:/data/product_dataset:ro
-      - ../product_dataset_backup-20260421T153504Z-3-001/product_dataset_backup:/data/product_dataset_backup:ro
+      # Датасеты из ../datasets (вне git), read-only
+      - ../datasets/product_dataset:/data/product_dataset:ro
+      - ../datasets/product_dataset_backup:/data/product_dataset_backup:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

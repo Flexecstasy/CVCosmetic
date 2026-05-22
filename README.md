@@ -139,6 +139,75 @@ docker compose up --build
 
 Первый запуск скачивает образ и модели EasyOCR (~2.6 GB итоговый образ).
 
+Перед запуском подготовьте датасеты (после `git clone` они не скачиваются автоматически).
+
+### Где лежат датасеты
+
+Датасеты хранятся на Google Drive:
+
+- https://drive.google.com/drive/folders/1-UarMu4OFc79AUwFs5AwgXe_k-t8w_7S?usp=drive_link
+
+Скачайте и распакуйте их в корне репозитория в папку `datasets/`:
+
+```bash
+# из корня репозитория
+mkdir -p datasets
+# положите сюда папки:
+# datasets/product_dataset
+# datasets/product_dataset_backup
+```
+
+`docker-compose.yml` монтирует их как:
+- `../datasets/product_dataset -> /data/product_dataset`
+- `../datasets/product_dataset_backup -> /data/product_dataset_backup`
+
+При старте API каталог товаров (`catalog.db`) пересобирается автоматически из этих папок.
+
+---
+
+## Каталогный Поиск (Fallback по metadata.json)
+
+### Зачем это сделано
+
+На фронтальной стороне упаковки состав (INCI) часто отсутствует или не читается OCR.  
+Чтобы всё равно возвращать состав, в проект добавлен каталогный поиск по датасету.
+
+### Как это работает
+
+1. При старте приложения строится локальная SQLite-база `cvcosmetic/catalog.db`.
+2. База наполняется из `metadata.json` по всем доступным датасетам:
+   - `product_dataset`
+   - `product_dataset_backup`
+   - `datasets/product_dataset`
+   - `datasets/product_dataset_backup`
+   - `/data/product_dataset` и `/data/product_dataset_backup` (в Docker)
+3. Для каждой записи сохраняются:
+   - `title`
+   - `composition`
+   - `brand`
+   - `volume`
+   - нормализованный `search_text`
+4. В API (`POST /api/recognition/label`) логика такая:
+   - сначала OCR + обычное извлечение состава с изображения;
+   - если состав не найден, запускается поиск похожего товара по `title + ocrText`;
+   - если найден матч, состав берётся из каталога и возвращается в ответе.
+
+### Что улучшено в матчинге
+
+- Нормализация шумного OCR-текста.
+- Fuzzy-сопоставление токенов.
+- `brand-lock`: если бренд найден уверенно, поиск ограничивается товарами этого бренда.
+- Поддержка «разнесённых» брендов в OCR (`A X I S -Y`).
+- EN→RU словарь частых косметических токенов (типы продукта, эффекты, активы).
+
+### Что возвращается в API
+
+Если состав взят из каталога, в ответе:
+
+- заполняются `ingredientsRaw` и `ingredientsParsed`;
+- в `warnings` добавляется сообщение, что состав получен из каталога;
+- в `catalogMatch` возвращается диагностика матча (`title`, `score`, `method`, `matched_tokens`, `query_tokens`).
+
 ### Эндпоинты
 
 | Метод | URL | Описание |

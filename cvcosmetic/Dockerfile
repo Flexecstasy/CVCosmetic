@@ -14,7 +14,7 @@ WORKDIR /app
 
 # CPU-only torch сначала (~230 MB вместо 2+ GB с CUDA)
 RUN pip install --no-cache-dir \
-    torch==2.2.2+cpu torchvision==0.17.2+cpu \
+    torch==2.2.2 torchvision==0.17.2 \
     --index-url https://download.pytorch.org/whl/cpu
 
 # Остальные зависимости

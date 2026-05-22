@@ -4,8 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+from .catalog import find_by_text, rebuild_catalog
 from .extractor import extract_entities
-from .models import RecognitionResponse
+from .models import CatalogMatchInfo, RecognitionResponse
 from .normalizer import normalize_text, parse_ingredients
 from .ocr import _get_reader, run_ocr
 
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
     # Прогреваем EasyOCR при старте
     logger.info("Инициализация OCR моделей...")
     _get_reader()
+    rebuild_catalog()
     logger.info("OCR готов.")
     yield
 
@@ -46,6 +48,7 @@ async def recognize_label(
     """
     errors: list[str] = []
     warnings: list[str] = []
+    catalog_match_info: CatalogMatchInfo | None = None
 
     # Валидация типа файла
     if image.content_type not in ("image/jpeg", "image/png", "image/webp"):
@@ -80,6 +83,23 @@ async def recognize_label(
         ocr_text=normalized_ocr,
     )
 
+    # Если на изображении не найден состав, пробуем найти товар в каталоге metadata.json
+    if not ingredients_raw:
+        search_query = "\n".join(x for x in [title or "", normalized_ocr] if x)
+        catalog_match = find_by_text(search_query)
+        if catalog_match:
+            ingredients_raw = catalog_match.composition
+            catalog_match_info = CatalogMatchInfo(
+                title=catalog_match.title,
+                score=catalog_match.score,
+                method=catalog_match.method,
+                matched_tokens=catalog_match.matched_tokens,
+                query_tokens=catalog_match.query_tokens,
+            )
+            warnings.append(
+                f"Состав взят из каталога по похожему товару (score={catalog_match.score}, title='{catalog_match.title}')."
+            )
+
     # Предупреждение о низком качестве
     low_conf = [b for b in ocr_blocks if b["confidence"] < 0.5]
     if len(low_conf) > len(ocr_blocks) * 0.4 and ocr_blocks:
@@ -101,6 +121,7 @@ async def recognize_label(
         ingredientsRaw=ingredients_raw,
         ingredientsParsed=ingredients_parsed,
         ocrText=normalized_ocr if normalized_ocr else None,
+        catalogMatch=catalog_match_info,
         errors=errors,
         warnings=warnings,
     )

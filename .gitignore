@@ -1,6 +1,7 @@
 # Datasets (too large for git)
 product_dataset/
 product_dataset_backup*/
+cvcosmetic/catalog.db
 
 # Python
 __pycache__/
